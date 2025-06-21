@@ -1,27 +1,24 @@
 import requests
 
-# URL parameters for ZIP code 94538
+
 url = "https://npiregistry.cms.hhs.gov/api/"
 params = {
     "version": "2.1",
     "postal_code": "94538",
+    "taxonomy_description": "Internal Medicine",
     "pretty": "on"
 }
 
-# Send GET request
+
 response = requests.get(url, params=params)
 
 
-# Parse JSON response
 data = response.json()
 
-print(data)
-print("\n \n \n")
 
-# Check if results exist
 results = data.get("results", [])
 
-# Print out basic info for each provider
+
 for provider in results:
     basic = provider.get("basic", {})
     name = f"{basic.get('first_name', '')} {basic.get('last_name', '')}".strip()
