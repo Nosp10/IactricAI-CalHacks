@@ -6,7 +6,6 @@ import google.generativeai as genai
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
-
 pubmed = PubMed(tool="MyTool", email="disispavank@gmail.")
 
 def filter_year(query: str):
@@ -16,14 +15,12 @@ def filter_year(query: str):
 query_text = "coughing is only a symptom of bronchitis"
 results = filter_year(query_text)
 
-# Build a list of dicts for formatting later
 articles_info = []
 for idx, result in enumerate(results):
     info = result.toDict()
     title = info.get("title", "No title")
     abstract = info.get("abstract", "").replace("\n", " ")
     pub_date = info.get("publication_date")
-    # format date as ISO if possible
     date_str = str(pub_date)
     articles_info.append({
         "index": idx,
@@ -84,7 +81,6 @@ def generate_validation(query_text: str, articles_info: list) -> str:
         response = genai.GenerativeModel("gemini-2.5-flash").generate_content(contents=contents)
         return response.text
     except Exception as e:
-        # fallback: try older client style if needed
         try:
             client = genai.Client(api_key=api_key)
             resp = client.models.generate_content(
@@ -96,3 +92,4 @@ def generate_validation(query_text: str, articles_info: list) -> str:
             return f"Error calling Gemini: {e}; fallback error: {e2}"
 
 print(generate_validation(query_text=query_text, articles_info=articles_info))
+
