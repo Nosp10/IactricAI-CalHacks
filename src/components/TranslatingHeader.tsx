@@ -4,9 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const phrases = [
   { text: "Tap. Speak. Understand.", lang: "English" },
   { text: "Toca. Habla. Entiende.", lang: "Spanish" },
-  { text: "Appuyez. Parlez. Comprenez.", lang: "French" },
-  { text: "Tıkla. Konuş. Anla.", lang: "Turkish" },
-  { text: "タップして、話して、理解する。", lang: "Japanese" },
+  { text: "నొక్కండి. మాట్లాడండి. అర్థం చేసుకోండి.", lang: "Telugu"},
 ];
 
 // Animation variants for text transitions
