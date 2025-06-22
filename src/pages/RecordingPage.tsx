@@ -23,6 +23,8 @@ export const RecordingPage = () => {
   const [claims, setClaims] = useState<Array<any>>([]);
   const [detectedLanguages, setDetectedLanguages] = useState<string[]>([]);
   const [isDetectingLanguage, setIsDetectingLanguage] = useState(false);
+
+  const [summary, setSummary] = useState<string | null>(null)
   
   // --- Refs to hold WebSocket, MediaRecorder, and timers ---
   const socketRef = useRef<WebSocket | null>(null);
@@ -44,6 +46,22 @@ export const RecordingPage = () => {
       }
     };
   }, []);
+
+  interface Source {
+    abstract_index: number;
+    website_link: string;
+    title: string;
+    reason: string;
+  }
+
+  interface ClaimData {
+    claim: string;
+    validity: number;
+    question: string;
+    sources: Source[];
+  }
+
+  const claimList: ClaimData[] = []; // an array of ClaimData objects
   
   const handleStartRecording = async () => {
     // Reset UI state
@@ -57,24 +75,33 @@ export const RecordingPage = () => {
       // 2. Create WebSocket connection
       socketRef.current = new WebSocket(WEBSOCKET_URL);
 
-      // socketRef.current.onmessage = (event: MessageEvent) => {
-      //   try {
-      //     const data = JSON.parse(event.data);
-      //     if (data.type === "transcription") {
-      //       setClaims((prev) => [
-      //         ...prev,
-      //         {
-      //           speaker: data.speaker || "Patient",
-      //           text: data.text,
-      //           hasClaim: data.claims?.length > 0,
-      //           claimStatus: "verifying",
-      //         },
-      //       ]);
-      //     }
-      //   } catch (err) {
-      //     console.error("Failed to parse WebSocket message:", err);
-      //   }
-      // };
+      socketRef.current.onmessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "verif") {
+          const claimData: ClaimData = {
+            claim: data.claim,
+            validity: data.validity,
+            question: data.question,
+            sources: data.sources
+          };
+          claimList.push(claimData);
+          // setClaims((prev) => [
+          //   ...prev,
+          //   {
+          //     speaker: data.speaker || "Patient",
+          //     text: data.text,
+          //     hasClaim: data.claims?.length > 0,
+          //     claimStatus: "verifying",
+          //   },
+          // ]);
+        }
+
+        if (data.type === "summary") {
+          setSummary(data.summary)
+        }
+      };
+        
       
       
       // 3. Set up MediaRecorder
