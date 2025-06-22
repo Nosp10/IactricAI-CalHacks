@@ -9,6 +9,7 @@ import { ClaimAnalysis } from '../components/ClaimAnalysis';
 // This is the WebSocket URL for your local backend.
 // In production, this would be something like "wss://api.yourdomain.com/ws/audio"
 const WEBSOCKET_URL = "ws://localhost:8000/ws/audio";
+let claimNum: number = 0;
 
 // Mock claims data (you can keep this for UI testing)
 const mockClaims = [
@@ -78,14 +79,17 @@ export const RecordingPage = () => {
       socketRef.current.onmessage = (event: MessageEvent) => {
         const data = JSON.parse(event.data);
 
-        if (data.type === "verif") {
-          const claimData: ClaimData = {
-            claim: data.claim,
-            validity: data.validity,
-            question: data.question,
-            sources: data.sources
-          };
-          claimList.push(claimData);
+        if (data.type === "verification") {
+          console.log("GOT IN VERIFY*****************")
+          claimNum += 1;
+          mockClaims.push({
+            id: claimNum,
+            text: data.claim,
+            timing: 5000,
+            status: data.validity,
+            explanation: (data.sources)[0].reason,
+            followUpQuestion: data.question
+          });
           // setClaims((prev) => [
           //   ...prev,
           //   {

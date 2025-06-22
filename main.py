@@ -1,7 +1,6 @@
 import os
 import json
 import base64
-import asyncio
 from groq import Groq
 import websockets
 from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect
@@ -11,27 +10,35 @@ import asyncio
 import tempfile
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
+import anthropic
 import spacy
 from typing import List
 import google.generativeai as genai
-# from verify import ____
+from pymed import PubMed
+from verify import get_results, get_verification_info, generate_validation
 from opinion_query import get_doctors
+from meeting_summary import summarize_transcript
+
 
 nlp = spacy.load("en_core_web_sm")
 from dotenv import load_dotenv
 load_dotenv()
 
+ant_api_key = os.getenv("ANTHROPIC_API_KEY")
+ant_client = anthropic.Anthropic(api_key=ant_api_key)
+api_key = os.getenv("GOOGLE_API_KEY")
+pubmed = PubMed(tool="MyTool", email="disispavank@gmail.come")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 TRANSCRIPTS=[]
 
 app = FastAPI()
 
-async def anonymize(text) -> str:
-    analyzer = AnalyzerEngine()
-    anonymizer = AnonymizerEngine()
-    results = analyzer.analyze(text=text, language=['en', 'es', 'te'])
-    anonymized_result = anonymizer.anonymize(text=text, analyzer_results=results)
-    return anonymized_result
+# async def anonymize(text) -> str:
+#     analyzer = AnalyzerEngine()
+#     anonymizer = AnonymizerEngine()
+#     results = analyzer.analyze(text=text, language='en')
+#     anonymized_result = anonymizer.anonymize(text=text, analyzer_results=results)
+#     return anonymized_result.text
 
 
 
@@ -39,7 +46,7 @@ async def get_claims(transcript: str) -> List[str]:
     LINK_PHRASES = [
         "is a sign of", "is related to", "may indicate", "could suggest",
         "consistent with", "might be due to", "is due to", "is because of"
-    ]   
+    ]
     doc = nlp(transcript.lower())
     claims = []
 
@@ -89,7 +96,6 @@ async def find_doctors(transcripts: list, zipcode: str):
 
 
 
-
 async def transcribe_audio(audio_chunk: bytes) -> str:
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_audio:
         temp_audio.write(audio_chunk)
@@ -105,10 +111,8 @@ async def transcribe_audio(audio_chunk: bytes) -> str:
             )
 
         print(translation.text)
-        anonymized_text = anonymize(translation.text)
-        print(anonymized_text)
-        TRANSCRIPTS.append(anonymized_text)
-        return anonymized_text
+        TRANSCRIPTS.append(translation.text)
+        return translation.text
 
 @app.websocket("/ws/audio")
 async def audio_stream(websocket: WebSocket):
@@ -120,19 +124,14 @@ async def audio_stream(websocket: WebSocket):
             transcription = await transcribe_audio(audio_chunk)
 
             print(transcription)
-            # claims = get_claims(transcription)
-            # add func to take claims and output:
-
-            # {
-            #     "claim": "...",
-            #     "sources": [],
-            #     "validity": 1,
-            #     "question" "...",
-            # }
-
-            # return dict to front end for output
-
-
+            claims = await get_claims(transcription)
+            verification_data = []
+            for claim in claims:
+                verif_data = await get_verification_info(claim)
+                await websocket.send_json({
+                    "type": "verification",
+                    "data": verif_data
+                })
 
     except WebSocketDisconnect:
         print("Client disconnected")
@@ -140,5 +139,18 @@ async def audio_stream(websocket: WebSocket):
         print("Error:", e)
         await websocket.close()
     # finally:
+        # sep = " "
+        # transcript_str = sep.join(TRANSCRIPTS)
+        # bullet_pt_str = await summarize_transcript(transcript_str)
+
+        # bullet_pt_dict = {}
+
+        # bullet_pt_dict["summary"] = bullet_pt_str
+        # bullet_pt_dict["type"] = "summary"
+
+        # await websocket.send_json({
+        #     bullet_pt_dict
+        # })
+
         # await find_doctors(TRANSCRIPTS)
 

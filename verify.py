@@ -37,7 +37,7 @@ async def format_abstract_contents(query_text: str, articles_info: list):
         "3. **Output format (strict JSON):**\n"
         "{\n"
         "  \"claim\": \"<the original claim string>\",\n"
-        "  \"validity\": <float 0.0–1.0>,\n"
+        "  \"validity\": <contains a value: true, unverified, or vague>\n"
         "  \"question\": \"<A suggested follow-up question someone might ask a doctor based on this claim>\",\n"
         "  \"sources\": [\n"
         "    {\n"
@@ -64,7 +64,7 @@ async def format_abstract_contents(query_text: str, articles_info: list):
     return contents
 
 async def generate_validation(query_text: str, articles_info: list) -> str:
-    contents = format_abstract_contents(query_text, articles_info)
+    contents = await format_abstract_contents(query_text, articles_info)
     response = genai.GenerativeModel("gemini-2.5-flash").generate_content(contents=contents)
     return response.text
 
@@ -79,7 +79,7 @@ async def json_parse(text: str):
 
 #returns a python dict (CALL THIS FUNCTION)
 async def get_verification_info(query_text):
-    results = get_results(query_text)
+    results = await get_results(query_text)
 
     articles_info = []
     
@@ -107,13 +107,14 @@ async def get_verification_info(query_text):
             "url": url
         })
           
-    response_text = generate_validation(query_text, articles_info)
+    response_text = await generate_validation(query_text, articles_info)
 
-    print(response_text)
-    print("------")
+    print(response_text, "***************")
     
-    parsed_dict = json_parse(response_text)
-    
+    parsed_dict = await json_parse(response_text)
+    parsed_dict["type"] = "verif"
+    parsed_dict["sources"] = parsed_dict['sources'][:2]
+
     return parsed_dict
 
 
@@ -123,6 +124,10 @@ async def get_verification_info(query_text):
     "claim": "",
     "validity": 1,
     "question": "",
-    "sources": [],
+    "sources": [
+        "website_link"
+        "reason"
+    ],
+    "
 }
 """
