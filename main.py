@@ -13,13 +13,15 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 import spacy
 from typing import List
+import google.generativeai as genai
 # from verify import ____
 from opinion_query import get_doctors
 
 nlp = spacy.load("en_core_web_sm")
 from dotenv import load_dotenv
+load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 TRANSCRIPTS=[]
 
 app = FastAPI()
@@ -50,8 +52,41 @@ async def get_claims(transcript: str) -> List[str]:
     return claims
 
 
-async def find_doctors(transcripts: list):
-    """Returns dict with doctors information - json?"""
+async def find_doctors(transcripts: list, zipcode: str):
+    """Get_specialty and pass that into get_doctors -> return json format and send back"""
+        # {
+        #     "name": name,
+        #     "specialty": specialty,
+        #     "address": address_str
+        # }
+    seperator = " "
+    conversation_history = seperator.join(transcripts)
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a clinical language expert assisting in specialist referrals."
+            },
+            {
+                "role": "user",
+                "content": f"""Given the following conversation between a doctor and a patient, analyze the medical content and determine the most relevant medical specialty associated with the core issue discussed. Your output should be a single medical specialty term (e.g., "cardiology", "neurology", etc.). Do not include explanations, punctuation, or formatting.
+
+    ---
+
+    {conversation_history}"""
+            }
+        ],
+        model="llama-3.3-70b-versatile"
+    )
+
+    # to do - > zipcode retrival
+
+    specialty = chat_completion.choices[0].message.content.strip()
+    doctor_info = get_doctors("60540", specialty)
+
+    # to do -> send to front end here json.dumps
+
 
 
 
@@ -69,6 +104,7 @@ async def transcribe_audio(audio_chunk: bytes) -> str:
                 temperature=0.0 
             )
 
+        print(translation.text)
         anonymized_text = anonymize(translation.text)
         print(anonymized_text)
         TRANSCRIPTS.append(anonymized_text)
@@ -79,9 +115,12 @@ async def audio_stream(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            audio_chunk = await websocket.receive_bytes()  
+            audio_chunk = await websocket.receive_bytes()
+            print("RECEIVED AUDIO***************")
             transcription = await transcribe_audio(audio_chunk)
-            claims = get_claims(transcription)
+
+            print(transcription)
+            # claims = get_claims(transcription)
             # add func to take claims and output:
 
             # {
@@ -100,6 +139,6 @@ async def audio_stream(websocket: WebSocket):
     except Exception as e:
         print("Error:", e)
         await websocket.close()
-    finally:
-        await find_doctors(TRANSCRIPTS)
+    # finally:
+        # await find_doctors(TRANSCRIPTS)
 

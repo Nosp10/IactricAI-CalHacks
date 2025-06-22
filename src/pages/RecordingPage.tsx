@@ -56,6 +56,26 @@ export const RecordingPage = () => {
       
       // 2. Create WebSocket connection
       socketRef.current = new WebSocket(WEBSOCKET_URL);
+
+      // socketRef.current.onmessage = (event: MessageEvent) => {
+      //   try {
+      //     const data = JSON.parse(event.data);
+      //     if (data.type === "transcription") {
+      //       setClaims((prev) => [
+      //         ...prev,
+      //         {
+      //           speaker: data.speaker || "Patient",
+      //           text: data.text,
+      //           hasClaim: data.claims?.length > 0,
+      //           claimStatus: "verifying",
+      //         },
+      //       ]);
+      //     }
+      //   } catch (err) {
+      //     console.error("Failed to parse WebSocket message:", err);
+      //   }
+      // };
+      
       
       // 3. Set up MediaRecorder
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -76,6 +96,15 @@ export const RecordingPage = () => {
         }
         audioChunksRef.current = []; // Clear chunks for the next interval
       };
+
+      // Automatically restart recording every 30 seconds
+      recordingIntervalRef.current = window.setInterval(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          mediaRecorderRef.current.stop();
+          mediaRecorderRef.current.start();
+        }
+      }, 30000);
+
       
       // 4. When WebSocket opens, start recording
       socketRef.current.onopen = () => {

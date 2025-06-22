@@ -1,7 +1,7 @@
 # from groq import Groq
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 # import os
-# load_dotenv()
+load_dotenv()
 # client = Groq(api_key=os.getenv("GROQ_KEY"))
 
 # with open("Rev.mp3", "rb") as f:
@@ -15,37 +15,36 @@
 
 # print(translation.text)
 
-import spacy
-from typing import List
+# import spacy
+# from typing import List
 
-nlp = spacy.load("en_core_web_sm")
+# nlp = spacy.load("en_core_web_sm")
 
-transcript = """
-Your cough is a sign of bronchitis.
-The patient has a fever and chills.
-Your itchy throat is related to your cancer.
-He reports general fatigue.
-Headaches may indicate a neurological issue.
-I'm feeling good right now
-"""
+# transcript = """
+# Your cough is a sign of bronchitis.
+# The patient has a fever and chills.
+# Your itchy throat is related to your cancer.
+# He reports general fatigue.
+# Headaches may indicate a neurological issue.
+# I'm feeling good right now
+# """
 
 
-LINK_PHRASES = [
-    "is a sign of", "is related to", "may indicate", "could suggest",
-    "consistent with", "might be due to", "is due to", "is because of"
-]
+# LINK_PHRASES = [
+#     "is a sign of", "is related to", "may indicate", "could suggest",
+#     "consistent with", "might be due to", "is due to", "is because of"
+# ]
 
-doc = nlp(transcript.lower())
-claims = []
+# doc = nlp(transcript.lower())
+# claims = []
 
-for sent in doc.sents:
-    for phrase in LINK_PHRASES:
-        if phrase in sent.text:
-            claims.append(sent.text.strip())
-            break
+# for sent in doc.sents:
+#     for phrase in LINK_PHRASES:
+#         if phrase in sent.text:
+#             claims.append(sent.text.strip())
+#             break
 
-print(claims)
-
+# print(claims)
 
 
 
