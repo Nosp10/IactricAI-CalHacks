@@ -8,22 +8,22 @@ api_key = os.getenv("GOOGLE_API_KEY")
 
 pubmed = PubMed(tool="MyTool", email="disispavank@gmail.")
 
-def filter_year(query: str):
+def get_results(query: str):
     results = pubmed.query(query, max_results=30)
     return results
 
 query_text = "coughing is only a symptom of bronchitis"
-results = filter_year(query_text)
+results = get_results(query_text)
 
 articles_info = []
-for idx, result in enumerate(results):
+for index, result in enumerate(results):
     info = result.toDict()
     title = info.get("title", "No title")
     abstract = info.get("abstract", "").replace("\n", " ")
     pub_date = info.get("publication_date")
     date_str = str(pub_date)
     articles_info.append({
-        "index": idx,
+        "index": index,
         "title": title,
         "abstract": abstract,
         "date": date_str
@@ -77,19 +77,8 @@ def format_abstract_contents(query_text: str, articles_info: list):
 
 def generate_validation(query_text: str, articles_info: list) -> str:
     contents = format_abstract_contents(query_text, articles_info)
-    try:
-        response = genai.GenerativeModel("gemini-2.5-flash").generate_content(contents=contents)
-        return response.text
-    except Exception as e:
-        try:
-            client = genai.Client(api_key=api_key)
-            resp = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=contents
-            )
-            return resp.text
-        except Exception as e2:
-            return f"Error calling Gemini: {e}; fallback error: {e2}"
+    response = genai.GenerativeModel("gemini-2.5-flash").generate_content(contents=contents)
+    return response.text
 
 print(generate_validation(query_text=query_text, articles_info=articles_info))
 
